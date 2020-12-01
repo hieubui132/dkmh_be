@@ -124,6 +124,102 @@ class APIController extends Controller
 
         $idSubject = $postbody["subject_id"];
         $idClass = $postbody["class_id"];
+        $room = $postbody["room"];
+        $day = $postbody["day"];
+        $startClass = $postbody["start_class"];
+        $endClass = $postbody["end_class"];
+        $teacherId = $postbody["teacher_id"];
+        $maxStudent = $postbody["max_student"];
+        
+ 
+        $class = ClassRom::where(['subject_id'=>$idSubject ,'class_id'=>$idClass])->get();
+        if (!is_null($class) || count($class) > 0){
+            return $this->error(501,"Môn học này đã tồn tại");
+        }
+        try{
+            DB::table('class')->insert( [
+                'subject_id' => $idSubject,
+            'class_id' => $idClass,
+            'room' => $room,
+            'day' => $day,
+            'start_class' => $startClass,
+             'end_class' =>$endClass  ,
+             'teacher_id' => $teacherId,
+             'max_student' => $maxStudent
+             ]);
+            
+        } catch (\Illuminate\Database\QueryException $ex){
+             return $this->error(501,"Thêm đăng ký học thất bại");
+        }  
+        return $this->ok($class[0], "Thêm đăng ký học thành công");
+    }
+    public function putRegist(Request $request)
+    {
+        $postbody = $request->json()->all();
+        if (is_null( $postbody ))
+        {
+             return response()->json($this->badRequest(), 403);
+        }
+
+       
+        $idSubject = $postbody["subject_id"];
+        $idClass = $postbody["class_id"];
+        $room = $postbody["room"];
+        $day = $postbody["day"];
+        $startClass = $postbody["start_class"];
+        $endClass = $postbody["end_class"];
+        $teacherId = $postbody["teacher_id"];
+        $maxStudent = $postbody["max_student"];
+        
+        $class = ClassRom::where(['subject_id'=>$idUpdateSubject ,'class_id'=>$idUpdateClass])->get();
+
+        if (is_null($class) || count($class) <= 0 || !isset($class[0])){
+            return $this->error(501,"Không tồn tại môn học này");
+        }
+
+        try{
+           
+            DB::table('class')->where(['class_id' => $idClass])->update([
+            'subject_id' => $idSubject, 
+            'room' => $room,
+            'day' => $day,
+            'start_class' => $startClass,
+             'end_class' =>$endClass  ,
+             'teacher_id' => $teacherId,
+             'max_student' => $maxStudent
+             ]);
+        } catch (\Illuminate\Database\QueryException $ex){
+             return $this->error(501,"Cập nhập đăng ký học thất bại");
+        }  
+        return $this->ok($class[0], "Cập nhập ký học thành công");
+    } 
+
+    public function deleteRegist(Request $request){
+
+        $postbody = $request->json()->all();
+        if (is_null( $postbody ))
+        {
+             return response()->json($this->badRequest(), 403);
+        } 
+        $idClass = $postbody["class_id"];
+    
+        DB::table('class')->where(['class_id' => $idClass])->delete();
+
+        return $this->ok($postbody, "Xóa đăng ký học thành công");
+    }
+
+
+    
+    public function postStudentResgist(Request $request)
+    {
+        $postbody = $request->json()->all();
+        if (is_null( $postbody ))
+        {
+             return response()->json($this->badRequest(), 403);
+        }
+
+        $idSubject = $postbody["subject_id"];
+        $idClass = $postbody["class_id"];
         $idStudent = $postbody["student_id"];
  
         $class = ClassRom::where(['subject_id'=>$idSubject ,'class_id'=>$idClass])->get();
@@ -138,7 +234,7 @@ class APIController extends Controller
         }  
         return $this->ok($class[0], "Đăng ký học thành công");
     }
-    public function putRegist(Request $request)
+    public function putStudentRegist(Request $request)
     {
         $postbody = $request->json()->all();
         if (is_null( $postbody ))
@@ -170,7 +266,7 @@ class APIController extends Controller
         return $this->ok($class[0], "Cập nhập ký học thành công");
     } 
 
-    public function deleteRegist(Request $request){
+    public function deleteStudentRegist(Request $request){
 
         $postbody = $request->json()->all();
         if (is_null( $postbody ))
@@ -187,6 +283,9 @@ class APIController extends Controller
 
         return $this->ok($postbody, "Xóa đăng ký học thành công");
     }
+
+
+
 
     public function downloadAllClass(Request $request){
          
@@ -253,16 +352,24 @@ class APIController extends Controller
 
     public function importCSV(Request $request){
         $path = $request->file('file')->getRealPath();
-        $data = array_map('str_getcsv', file($path));
-        array_shift($data);
+        $data = array_map('str_getcsv', file($path)); 
         $subjectData =  [];
         $classData =  [];
 
         foreach ($data as $item ){  
-            $subjectData[] =   ['class_id' =>  $item[0], 'subject_id' => $item[1], 'room' => $item[2], 'day' => $item[3], 'start_class' => $item[4], 'end_class' => $item[5], 'teacher_id' => $item[6], 'max_student' => $item[7]];
+           $dataxx =   [
+                'class_id' =>  $item[0], 
+                'subject_id' => $item[1],
+                 'room' => $item[2], 
+                 'day' => $item[3], 
+                 'start_class' => $item[4], 
+                 'end_class' => $item[5], 
+                 'teacher_id' => $item[6], 
+                 'max_student' => $item[7]];
+	 ClassRom::updateOrCreate(  ['class_id' =>  $item[0]],  $dataxx ); 
         }
-        DB::table('class')->insert(  $subjectData ); 
-        return $this->ok($data, "Import thành công ");
+   
+        return $this->ok([], "Import thành công ");
     }
     
 }
